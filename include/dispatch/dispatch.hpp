@@ -35,7 +35,6 @@ inline std::enable_if_t<index < std::tuple_size_v<Tuple>> tuple_for_each(Tuple& 
 	tuple_for_each<Tuple, Fn, index + 1>(t, std::forward<Fn>(f));
 }
 
-
 namespace matchers {
 
 struct integer {};
@@ -141,6 +140,8 @@ inline auto match(const char* base) {
 template <typename ... Types>
 class matcher {
 public:
+	using data_type = std::tuple<Types...>;
+
 	matcher(const std::string& regex)
 		: m_regex(regex)  { }
 
@@ -167,7 +168,7 @@ private:
 
 template <typename ... Types>
 inline auto make_matcher(matchers::matcher_expr<Types...>&& m) {
-	return matcher<Types...>(m.regex());
+	return matcher<typename matchers::traits<Types>::data_type...>(m.regex());
 }
 
 }

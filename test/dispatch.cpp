@@ -44,6 +44,7 @@ TEST(dispatch, matcher_tuple) {
 
 TEST(dispatch, make_matcher_string) {
 	auto m = make_matcher(match("/foo/"));
+	static_assert(std::is_same_v<std::tuple<>, decltype(m)::data_type>, "matcher data type mismatch");
 	ASSERT_TRUE(m.match("/foo/"));
 	ASSERT_FALSE(m.match("/bar/"));
 }
@@ -55,3 +56,9 @@ TEST(dispatch, make_matcher_composed) {
 	ASSERT_FALSE(m.match("/foo/foo/bar/bar"));
 }
 
+TEST(dispatch, make_matcher_tuple) {
+	auto m = make_matcher(match("/foo/") + word() + "/bar/" + integer());
+	auto t = m.match_tuple("/foo/john_doe/bar/6789");
+	ASSERT_EQ("john_doe", std::get<0>(t));
+	ASSERT_EQ(6789, std::get<1>(t));
+}
