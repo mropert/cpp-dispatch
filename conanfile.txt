@@ -1,0 +1,8 @@
+[requires]
+gtest/1.8.0@lasote/stable
+
+[generators]
+cmake
+
+[options]
+gtest:shared=False
