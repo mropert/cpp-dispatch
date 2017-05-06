@@ -11,9 +11,9 @@ target_include_directories(cpp-dispatch INTERFACE include)
 
 source_group(include FILES include/dispatch/dispatch.hpp)
 
-find_package(GTEST)
+find_package(GTest)
 
-if (GTEST_FOUND)
+if (GTest_FOUND)
 	enable_testing()
 	add_executable(cpp-dispatch-test test/dispatch.cpp)
 	target_link_libraries(cpp-dispatch-test PRIVATE cpp-dispatch GTest::GTest GTest::Main)

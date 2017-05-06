@@ -9,6 +9,14 @@
 #include <type_traits>
 #include <utility>
 
+// Glue
+#if defined(__clang__) && __clang_major__ < 4 && __clang_minor__ < 9
+namespace std {
+	template< class T >
+	constexpr std::size_t tuple_size_v = tuple_size<T>::value;
+}
+#endif
+
 namespace dispatch {
 
 // Tools: tuple_for_each, apply..;
