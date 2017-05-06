@@ -14,11 +14,13 @@ TEST(dispatch, matcher_expr_string) {
 TEST(dispatch, matcher_expr_int) {
 	auto e = match(integer());
 	ASSERT_EQ("^([0-9]+)$", e.regex());
+	static_assert(std::is_same_v<std::tuple<int>, decltype(e)::data_type>, "matcher data type mismatch");
 }
 
 TEST(dispatch, matcher_expr_word) {
 	auto e = match(word());
 	ASSERT_EQ("^([[:w:]]+)$", e.regex());
+	static_assert(std::is_same_v<std::tuple<std::string>, decltype(e)::data_type>, "matcher data type mismatch");
 }
 
 
@@ -30,6 +32,7 @@ TEST(dispatch, matcher_expr_compose_simple) {
 TEST(dispatch, matcher_expr_compose_advanced) {
 	auto e = match("/foo/") + word() + "/bar/" + integer();
 	ASSERT_EQ("^/foo/([[:w:]]+)/bar/([0-9]+)$", e.regex());
+	static_assert(std::is_same_v<std::tuple<std::string, int>, decltype(e)::data_type>, "matcher data type mismatch");
 }
 
 TEST(dispatch, matcher_tuple) {

@@ -27,12 +27,12 @@ constexpr decltype(auto) apply(F &&f, Tuple &&t) {
 }
 
 template <typename Tuple, typename Fn, std::size_t index>
-inline std::enable_if_t<index == std::tuple_size_v<Tuple>> tuple_for_each(Tuple&, Fn) {}
+inline std::enable_if_t<index == std::tuple_size_v<Tuple>> tuple_for_each(Tuple&, Fn&&) {}
 
 template <typename Tuple, typename Fn, std::size_t index = 0>
-inline std::enable_if_t<index < std::tuple_size_v<Tuple>> tuple_for_each(Tuple& t, Fn& f) {
+inline std::enable_if_t<index < std::tuple_size_v<Tuple>> tuple_for_each(Tuple& t, Fn&& f) {
 	f(std::get<index>(t));
-	tuple_for_each<Tuple, Fn, index + 1>(t, f);
+	tuple_for_each<Tuple, Fn, index + 1>(t, std::forward<Fn>(f));
 }
 
 
@@ -74,6 +74,8 @@ struct traits<word> {
 template <typename ... Types>
 class matcher_expr {
 public:
+	using data_type = std::tuple<typename traits<Types>::data_type...>;
+
 	matcher_expr(const std::string& regex, Types... ts)
 		: matcher_expr(regex, std::make_tuple(ts...)) { }
 
