@@ -65,21 +65,30 @@ TEST(dispatch, make_matcher_tuple) {
 	ASSERT_EQ(6789, std::get<1>(p.second));
 }
 
-TEST(dispatch, dispatch_rule) {
-	dispatch_rule<std::string, int> d(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+TEST(dispatch, rule) {
+	rules::rule<std::string, int> r(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
 		ASSERT_EQ("john_doe", s);
 		ASSERT_EQ(6789, i);
 	});
 	;
-	ASSERT_TRUE(d.dispatch("/foo/john_doe/bar/6789"));
-	ASSERT_FALSE(d.dispatch("/foo/foo/bar/bar"));
+	ASSERT_TRUE(r.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(r.dispatch("/foo/foo/bar/bar"));
 }
 
-TEST(dispatch, make_dispatch_rule) {
-	auto d = make_dispatch_rule(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+TEST(dispatch, make_rule) {
+	auto r = rules::make_rule(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
 		ASSERT_EQ("john_doe", s);
 		ASSERT_EQ(6789, i);
 	});
-	ASSERT_TRUE(d.dispatch("/foo/john_doe/bar/6789"));
-	ASSERT_FALSE(d.dispatch("/foo/foo/bar/bar"));
+	ASSERT_TRUE(r.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(r.dispatch("/foo/foo/bar/bar"));
+}
+
+TEST(dispatch, dispatch_rule) {
+	dispatch_rule dr(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+		ASSERT_EQ("john_doe", s);
+		ASSERT_EQ(6789, i);
+	});
+	ASSERT_TRUE(dr.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(dr.dispatch("/foo/foo/bar/bar"));
 }

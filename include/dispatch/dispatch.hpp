@@ -2,6 +2,7 @@
 #define DISPATCH_HPP
 
 #include <functional>
+#include <memory>
 #include <regex>
 #include <string>
 #include <sstream>
@@ -183,11 +184,12 @@ inline auto make_matcher(const matchers::matcher_expr<Types...>& m) {
 	return matcher<typename matchers::traits<Types>::data_type...>(m.regex());
 }
 
+namespace rules {
 template <typename ... Types>
-class dispatch_rule {
+class rule {
 public:
 	template <typename F, typename ... MTypes>
-	dispatch_rule(const matchers::matcher_expr<MTypes...>& m, F&& f) 
+	rule(const matchers::matcher_expr<MTypes...>& m, F&& f)
 		: m_matcher(make_matcher(m))
 		, m_fn(std::forward<F>(f)) {}
 
@@ -205,9 +207,52 @@ private:
 };
 
 template <typename F, typename ... Types>
-auto make_dispatch_rule(const matchers::matcher_expr<Types...>& m, F&& f) {
-	return dispatch_rule<typename matchers::traits<Types>::data_type...>(m, std::forward<F>(f));
+auto make_rule(const matchers::matcher_expr<Types...>& m, F&& f) {
+	return rule<typename matchers::traits<Types>::data_type...>(m, std::forward<F>(f));
 }
+
+}
+
+class dispatch_rule {
+private:
+	struct rule_interface {
+		~rule_interface() = default;
+		virtual bool dispatch(const std::string& s) const = 0;
+	};
+
+	template <typename ... Types>
+	class vrule : public rule_interface {
+	public:
+		vrule(rules::rule<Types...>&& rule)
+			: m_rule(std::move(rule)) {}
+
+		virtual bool dispatch(const std::string& s) const override {
+			return m_rule.dispatch(s);
+		}
+
+	private:
+		rules::rule<Types...> m_rule;
+	};
+
+	template <typename F, typename ... Types>
+	auto make_vrule(const matchers::matcher_expr<Types...>& m, F&& f) {
+		return std::make_unique<vrule<typename matchers::traits<Types>::data_type...>>(rules::make_rule(m, std::forward<F>(f)));
+	}
+
+public:
+	template <typename F, typename ... Types>
+	dispatch_rule(const matchers::matcher_expr<Types...>& m, F&& f)
+		: m_rule(make_vrule(m, std::forward<F>(f))) {}
+
+	bool dispatch(const std::string& s) const {
+		return m_rule->dispatch(s);
+	}
+
+private:
+	std::unique_ptr<rule_interface> m_rule;
+};
+
+
 
 
 
