@@ -193,6 +193,10 @@ public:
 		: m_matcher(make_matcher(m))
 		, m_fn(std::forward<F>(f)) {}
 
+	bool operator()(const std::string& s) const {
+		return dispatch(s);
+	}
+
 	bool dispatch(const std::string& s) const {
 		auto p = m_matcher.match_tuple(s);
 		if (!p.first)
@@ -267,7 +271,11 @@ public:
 		m_rules.push_back(dispatch_rule(m, std::forward<F>(f)));
 	}
 
-	bool dispatch(const std::string& s) {
+	bool operator()(const std::string& s) const {
+		return dispatch(s);
+	}
+
+	bool dispatch(const std::string& s) const {
 		return std::any_of(begin(m_rules), end(m_rules), [&s] (const dispatch_rule& dr) {
 			return dr.dispatch(s);
 		});
