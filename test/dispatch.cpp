@@ -92,3 +92,18 @@ TEST(dispatch, dispatch_rule) {
 	ASSERT_TRUE(dr.dispatch("/foo/john_doe/bar/6789"));
 	ASSERT_FALSE(dr.dispatch("/foo/foo/bar/bar"));
 }
+
+TEST(dispatch, dispatcher) {
+	dispatcher d;
+	d.add(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+		ASSERT_EQ("john_doe", s);
+		ASSERT_EQ(6789, i);
+	});
+	d.add(match("/bar/") + integer() + "/foo/" + word(), [](auto i, auto s) {
+		ASSERT_EQ(1234, i);
+		ASSERT_EQ("jane_smith", s);
+	});
+	ASSERT_TRUE(d.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(d.dispatch("/foo/foo/bar/bar"));
+	ASSERT_TRUE(d.dispatch("/bar/1234/foo/jane_smith"));
+}

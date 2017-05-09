@@ -240,6 +240,14 @@ private:
 	}
 
 public:
+	dispatch_rule() = default;
+	// Movable...
+	dispatch_rule(dispatch_rule&& o) = default;
+	dispatch_rule& operator=(dispatch_rule&& o) = default;
+	// ... but not copiable
+	dispatch_rule(const dispatch_rule& o) = delete;
+	dispatch_rule& operator=(const dispatch_rule& o) = delete;
+
 	template <typename F, typename ... Types>
 	dispatch_rule(const matchers::matcher_expr<Types...>& m, F&& f)
 		: m_rule(make_vrule(m, std::forward<F>(f))) {}
@@ -252,9 +260,22 @@ private:
 	std::unique_ptr<rule_interface> m_rule;
 };
 
+class dispatcher {
+public:
+	template <typename F, typename ... Types>
+	void add(const matchers::matcher_expr<Types...>& m, F&& f) {
+		m_rules.push_back(dispatch_rule(m, std::forward<F>(f)));
+	}
 
-
-
+	bool dispatch(const std::string& s) {
+		return std::any_of(begin(m_rules), end(m_rules), [&s] (const dispatch_rule& dr) {
+			return dr.dispatch(s);
+		});
+	}
+	
+private:
+	std::vector<dispatch_rule> m_rules;
+};
 
 }
 
