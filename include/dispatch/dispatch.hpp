@@ -9,14 +9,6 @@
 #include <type_traits>
 #include <utility>
 
-// Glue
-#if defined(__clang__) && __clang_major__ < 4 && __clang_minor__ < 9
-namespace std {
-	template< class T >
-	constexpr std::size_t tuple_size_v = tuple_size<T>::value;
-}
-#endif
-
 namespace dispatch {
 
 // Tools: tuple_for_each, apply..;
@@ -150,6 +142,9 @@ class matcher {
 public:
 	using data_type = std::tuple<Types...>;
 
+	matcher(const matcher& o) = default;
+	matcher(matcher&& o) = default;
+
 	matcher(const std::string& regex)
 		: m_regex(regex)  { }
 
@@ -157,27 +152,56 @@ public:
 		return std::regex_match(s, m_regex);
 	}
 
-	auto match_tuple(const std::string& s) const {
-		std::tuple<Types...> t;
+	std::pair<bool, std::tuple<Types...>> match_tuple(const std::string& s) const {
 		std::smatch match;
-		if (std::regex_match(s, match, m_regex)) {
-			auto it = ++match.begin();
-			tuple_for_each(t, [&it](auto& v) {
-				std::istringstream iss(*it++);
-				iss >> v;
-			});
-		}
-		return t;
+		if (!std::regex_match(s, match, m_regex))
+			return std::make_pair(false, std::tuple<Types...>());
+
+		std::tuple<Types...> t;
+		auto it = ++match.begin();
+		tuple_for_each(t, [&it](auto& v) {
+			std::istringstream iss(*it++);
+			iss >> v;
+		});
+		return std::make_pair(true, std::move(t));
 	}
-		
+
 private:
 	std::regex m_regex;
 };
 
 template <typename ... Types>
-inline auto make_matcher(matchers::matcher_expr<Types...>&& m) {
+inline auto make_matcher(const matchers::matcher_expr<Types...>& m) {
 	return matcher<typename matchers::traits<Types>::data_type...>(m.regex());
 }
+
+template <typename ... Types>
+class dispatch_rule {
+public:
+	template <typename F, typename ... MTypes>
+	dispatch_rule(const matchers::matcher_expr<MTypes...>& m, F&& f) 
+		: m_matcher(make_matcher(m))
+		, m_fn(std::forward<F>(f)) {}
+
+	bool dispatch(const std::string& s) const {
+		auto p = m_matcher.match_tuple(s);
+		if (!p.first)
+			return false;
+		apply(m_fn, std::move(p.second));
+		return true;
+	}
+
+private:
+	matcher<Types...> m_matcher;
+	std::function<void(Types...)> m_fn;
+};
+
+template <typename F, typename ... Types>
+auto make_dispatch_rule(const matchers::matcher_expr<Types...>& m, F&& f) {
+	return dispatch_rule<typename matchers::traits<Types>::data_type...>(m, std::forward<F>(f));
+}
+
+
 
 }
 

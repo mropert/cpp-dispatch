@@ -37,9 +37,10 @@ TEST(dispatch, matcher_expr_compose_advanced) {
 
 TEST(dispatch, matcher_tuple) {
 	matcher<std::string, int> m("^/foo/([[:w:]]+)/bar/([0-9]+)$");
-	auto t = m.match_tuple("/foo/john_doe/bar/6789");
-	ASSERT_EQ("john_doe", std::get<0>(t));
-	ASSERT_EQ(6789, std::get<1>(t));
+	auto p = m.match_tuple("/foo/john_doe/bar/6789");
+	ASSERT_TRUE(p.first);
+	ASSERT_EQ("john_doe", std::get<0>(p.second));
+	ASSERT_EQ(6789, std::get<1>(p.second));
 }
 
 TEST(dispatch, make_matcher_string) {
@@ -58,7 +59,27 @@ TEST(dispatch, make_matcher_composed) {
 
 TEST(dispatch, make_matcher_tuple) {
 	auto m = make_matcher(match("/foo/") + word() + "/bar/" + integer());
-	auto t = m.match_tuple("/foo/john_doe/bar/6789");
-	ASSERT_EQ("john_doe", std::get<0>(t));
-	ASSERT_EQ(6789, std::get<1>(t));
+	auto p = m.match_tuple("/foo/john_doe/bar/6789");
+	ASSERT_TRUE(p.first);
+	ASSERT_EQ("john_doe", std::get<0>(p.second));
+	ASSERT_EQ(6789, std::get<1>(p.second));
+}
+
+TEST(dispatch, dispatch_rule) {
+	dispatch_rule<std::string, int> d(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+		ASSERT_EQ("john_doe", s);
+		ASSERT_EQ(6789, i);
+	});
+	;
+	ASSERT_TRUE(d.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(d.dispatch("/foo/foo/bar/bar"));
+}
+
+TEST(dispatch, make_dispatch_rule) {
+	auto d = make_dispatch_rule(match("/foo/") + word() + "/bar/" + integer(), [](auto s, auto i) {
+		ASSERT_EQ("john_doe", s);
+		ASSERT_EQ(6789, i);
+	});
+	ASSERT_TRUE(d.dispatch("/foo/john_doe/bar/6789"));
+	ASSERT_FALSE(d.dispatch("/foo/foo/bar/bar"));
 }
